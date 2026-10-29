@@ -206,6 +206,7 @@ tools/theme.sh themes/aurora                                 # push a theme; --r
 | [`tools/screendiff.py`](tools/screendiff.py) | Compares a before and an after screenshot pixel by pixel, leaving out the clock or anything you mask, and writes the pair with your Wi-Fi name blurred. Optional, like the trace tools. [Guide](tools/screendiff.md). |
 | [`tools/race_calendar.py`](tools/race_calendar.py) | Writes this season's F1 calendar into a theme for race-weekend mode, from the free Jolpica API. |
 | [`launcher/build-and-install.sh`](launcher/build-and-install.sh) | Builds a shrunk release (about 561 KB), installs it, switches Home, and rolls back if Home does not land on it. |
+| [`launcher/build-and-install-no-home.ps1`](launcher/build-and-install-no-home.ps1), [`build-and-install-no-home.sh`](launcher/build-and-install-no-home.sh) | Builds and installs the launcher APK without changing the HOME role or stock-launcher state; optional `-RestoreKeyServices` / `RESTORE_KEY_SERVICES=1` and `-LaunchHomeAfterBoot` / `LAUNCH_HOME_AFTER_BOOT=1` grant only their opted-in permissions. |
 
 The scripts never leave the TV without a Home app: they only disable a stock launcher they recognise,
 and skip the Home app in a list until another launcher answers HOME. Your own lists can live outside
@@ -222,6 +223,11 @@ that JDK is in the same range:
 ```powershell
 python -m venv tools\venv; tools\venv\Scripts\python.exe -m pip install -r tools\requirements.txt
 powershell -ExecutionPolicy Bypass -File launcher\build-and-install.ps1 -TvHost 192.168.1.50
+powershell -ExecutionPolicy Bypass -File launcher\build-and-install-no-home.ps1 -TvHost 192.168.1.50
+# Only if restore_key_services is enabled in config.xml or a theme:
+powershell -ExecutionPolicy Bypass -File launcher\build-and-install-no-home.ps1 -TvHost 192.168.1.50 -RestoreKeyServices
+# Only for the TCL boot path, when launch_home_after_boot is enabled:
+powershell -ExecutionPolicy Bypass -File launcher\build-and-install-no-home.ps1 -TvHost 192.168.1.50 -LaunchHomeAfterBoot
 powershell -ExecutionPolicy Bypass -File tools\disable.ps1 -TvHost 192.168.1.50 examples\xiaomi-mi-tv-4a\debloat.txt
 powershell -ExecutionPolicy Bypass -File tools\restore.ps1 -TvHost 192.168.1.50 examples\xiaomi-mi-tv-4a\debloat.txt
 powershell -ExecutionPolicy Bypass -File tools\theme.ps1 -TvHost 192.168.1.50 themes\aurora
@@ -463,7 +469,7 @@ Contributing through a coding agent? [AGENTS.md](AGENTS.md) gives it the same ru
 |---|---|
 | **Your TV's debloat list** | The most useful one: the next person with that model skips the discovery. |
 | **Launcher and prompt** | Launcher improvements and sharper prompt wording are welcome too. |
-| **Built something on top?** | A launcher, a port, a theme: add it to [SHOWCASE.md](SHOWCASE.md), where a hundred and fifty-one projects already live, sorted into home screens, forks, add-ons, tools and other platforms, with an index by TV brand. |
+| **Built something on top?** | A launcher, a port, a theme: add it to [SHOWCASE.md](SHOWCASE.md), where a hundred and fifty-two projects already live, sorted into home screens, forks, add-ons, tools and other platforms, with an index by TV brand. |
 
 The people whose work is in this repo:
 

@@ -7,7 +7,7 @@
 #        [-InputKeyService]   remote's Input button opens the input switcher (Google TV), plus config.xml
 #                             input_key_keycodes and app_keys; re-pass on every install
 #        [-HomeKeyService]    remotes whose Home button sends KEYCODE_ALL_APPS (Xiaomi sticks)
-#        [-RestoreKeyServices] grants WRITE_SECURE_SETTINGS for restore_key_services (helpers back after a force stop)
+#        [-RestoreKeyServices] grants WRITE_SECURE_SETTINGS for restore_key_services
 param(
     [string]$TvHost = $env:TV_HOST,
     [string]$StockLauncher = '',

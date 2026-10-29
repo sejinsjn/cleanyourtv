@@ -17,10 +17,12 @@
 
     <!-- Apps pinned to the dock row at the bottom, in this order. Missing apps are skipped. -->
     <string-array name="dock_apps">
-        <item>com.netflix.ninja</item>
-        <item>com.amazon.amazonvideo.livingroom</item>
+        <item>ar.tvplayer.tv</item>
+        <item>com.stremio.one</item>
         <item>com.google.android.youtube.tv</item>
-        <item>in.startv.hotstar</item>
+        <item>com.netflix.ninja</item>
+        <item>com.spotify.tv.android</item>
+        <item>com.google.android.youtube.tvmusic</item>
     </string-array>
     <!-- With fewer dock_apps than columns (or a dock app that is not installed), the free dock slots take
          the first grid apps, so the dock never shows a gap. false leaves them empty (#162); a theme can
@@ -166,10 +168,16 @@
     <bool name="settings_key_panel">false</bool>
 
     <!-- A force stop of the launcher (Settings, a cleaner app, am force-stop) takes HomeKeyService and InputKeyService
-         off the enabled list. true: Home puts the helpers that were running back when it starts; one turned off in
-         Settings stays off. Needs WRITE_SECURE_SETTINGS, which build-and-install grants with RESTORE_KEY_SERVICES=1
-         (-RestoreKeyServices on Windows). Can also be set with "restore_key_services": true in a theme's config.json. -->
+         off the enabled list. true: Home puts helpers that were running back when it starts; on TCL firmware that
+         resets accessibility at boot, Home briefly cycles the saved services list to bind them again. Other enabled
+         accessibility services reconnect too. A helper turned off in Settings stays off. Needs WRITE_SECURE_SETTINGS,
+         granted only with RESTORE_KEY_SERVICES=1 / -RestoreKeyServices at install. A theme can also opt in with
+         "restore_key_services": true. Off by default. -->
     <bool name="restore_key_services">false</bool>
+    <!-- With restore_key_services, rebind the previously enabled HomeKeyService after boot and ask it to open this launcher.
+         stock_home_redirect remains the fallback if the TV opens its stock Home separately.
+         Requires WRITE_SECURE_SETTINGS, the TCL AUTO_START app-op, and an already-enabled HomeKeyService. Off by default. -->
+    <bool name="launch_home_after_boot">false</bool>
 
     <!-- More remote buttons that open the input switcher, by Android keycode (INPUT_KEY_SERVICE=1
          build-and-install.sh; KEYCODE_TV always does). For buttons only a disabled app answered: the Xiaomi
@@ -213,11 +221,10 @@
     <string-array name="app_keys" translatable="false">
     </string-array>
 
-    <!-- Package of the stock launcher, for TVs whose firmware turns it back on after it was disabled. XGIMI's
-         com.xgimi.xrmservice does, on every one of its remote keys, power included (docs/TROUBLESHOOTING.md).
-         Whenever that launcher's home screen comes up anyway, HomeKeyService (HOME_KEY_SERVICE=1) sends the TV
-         straight back here. A theme's config.json can set it too. Leave empty to omit. -->
-    <string name="stock_home_redirect" translatable="false"></string>
+    <!-- Package of the stock launcher, for firmware that still opens its Home screen instead of honoring the
+         selected HOME role. When that screen appears, HomeKeyService redirects to this launcher. A theme's
+         config.json can set it too. Leave empty to omit. -->
+    <string name="stock_home_redirect" translatable="false">com.google.android.apps.tv.launcherx</string>
 
     <!-- For TVs whose firmware opens the Live TV app (live_tv_package) by itself at every power-on, with no setting
          to change it (Changhong / Homwee boards start com.mediatek.wwtv.tvcenter from its own boot receiver, which
@@ -378,7 +385,7 @@
 
     <!-- Tiles per row in the grid; the dock always has this many slots. Tiles are 180dp wide at 4 columns and
          shrink to fit from 5 up (about 144dp at 5, 117dp at 6 on a 1080p TV). -->
-    <integer name="columns">4</integer>
+    <integer name="columns">6</integer>
 
     <!-- Basic motion is on; advanced effects are opt-in in the launcher's own Settings screen. -->
     <bool name="animations">true</bool>

@@ -1,4 +1,4 @@
-"""A helper that is on the accessibility list but does not filter, because the global flag is off (#1047).
+"""Keep the TCL accessibility reset diagnosis and its explicit repair behavior accurate (#1047).
 
 Android can leave `enabled_accessibility_services` naming the launcher's `HomeKeyService` while
 `accessibility_enabled` reads `0`: on a TCL C6K Pro (`G08`, Android 14) that is what a reboot left
@@ -8,10 +8,10 @@ launcher's own `restore_key_services` does not reach this state either: `Service
 `ACCESSIBILITY_ENABLED` only after it has put a missing helper back on the list, and returns early when
 the list is already complete.
 
-Documentation only, so the tests pin what a reader has to be able to act on - both settings, the dump,
-the three commands, the device it was seen on - and pin the claim about `ServiceRepair` to its own code,
-so the note cannot go stale if the launcher starts repairing that state too. A misspelled `settings`
-key or a wrong class name sends a reader back to "nothing changed".
+The tests pin what a reader has to be able to act on - both settings, the dump, the three commands, and
+the device it was seen on - while checking that the opt-in `ServiceRepair` path actually handles the
+complete-list/accessibility-off state. A misspelled `settings` key or a wrong class name sends a reader
+back to "nothing changed".
 
 Run from the repository root: python3 -m unittest discover -s tests -v
 """
@@ -54,17 +54,11 @@ def section(text, heading):
     return "\n".join(out)
 
 
-def flag_written_after_the_list_check(java):
-    """True when `ServiceRepair` writes the flag only once it has also finished the enabled list.
-
-    The note tells a reader that `restore_key_services` cannot repair a complete list, which is true
-    only while the flag write sits after the `if (!missing) return;` early exit. Once the launcher
-    repairs this state itself, this test fails and the note has to say so instead.
-    """
-    body = java.split("static void restore(Context context)")[1]
-    early_return = body.find("if (!missing) return;")
-    flag_write = body.find("ACCESSIBILITY_ENABLED")
-    return early_return != -1 and flag_write != -1 and early_return < flag_write
+def rebinds_complete_list_when_accessibility_is_off(java):
+    """True when the opted-in repair cycles a complete list after accessibility resets to off."""
+    return ("needsAccessibilityRebind(accessibilityEnabled, allRecordedServicesEnabled)" in java
+            and "Settings.Secure.putString(cr, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, \"\")" in java
+            and "Settings.Secure.putInt(cr, Settings.Secure.ACCESSIBILITY_ENABLED, 1)" in java)
 
 
 class AccessibilityFlagNoteTest(unittest.TestCase):
@@ -109,15 +103,14 @@ class AccessibilityFlagNoteTest(unittest.TestCase):
     def test_bullet_links_the_issue(self):
         self.assertIn("[#1047](https://github.com/Gathin23/cleanyourtv/issues/1047)", self.note)
 
-    def test_bullet_says_restore_key_services_does_not_cover_it(self):
+    def test_bullet_scopes_repair_to_the_explicit_boot_option(self):
         self.assertIn("restore_key_services", self.note)
         self.assertIn("ServiceRepair", self.note)
 
-    def test_service_repair_still_returns_before_writing_the_flag(self):
-        # The note's claim, checked against the code it names rather than against the wording.
-        self.assertTrue(flag_written_after_the_list_check(self.java),
-                        "ServiceRepair now writes the flag on a complete list too: the note says it "
-                        "does not, so reword the note (and this test) with the launcher change")
+    def test_opt_in_service_repair_rebinds_a_complete_list(self):
+        self.assertIn("launch_home_after_boot", self.note)
+        self.assertTrue(rebinds_complete_list_when_accessibility_is_off(self.java),
+                        "the note describes a saved-list rebind, which must be implemented in ServiceRepair")
         self.assertIn("ENABLED_ACCESSIBILITY_SERVICES", self.java)
 
     def test_themes_readme_still_scopes_restore_key_services_to_a_force_stop(self):
@@ -127,9 +120,9 @@ class AccessibilityFlagNoteTest(unittest.TestCase):
                       "the key's own row is where a theme author reads what it repairs")
 
     def test_bullet_keeps_the_honest_limits(self):
-        # Neither the cause nor persistence was established on the reporter's set; promising a fix
-        # would be the kind of claim the repository asks contributors not to make.
-        self.assertIn("not retested", self.note)
+        # A successful run does not establish that every boot or TCL firmware behaves the same way.
+        self.assertIn("that was one cold-boot", self.section_text)
+        self.assertIn("not a guarantee across firmware", self.section_text)
         self.assertIn("not established", self.note)
 
     def test_bullet_is_not_read_as_licence_to_rewrite_the_list(self):
@@ -162,16 +155,14 @@ class AccessibilityFlagNoteTest(unittest.TestCase):
         sample = "\n".join(["## One", "body", "## Two", "other"])
         self.assertEqual(section(sample, "## One"), "body")
 
-    def test_the_flag_check_reads_the_early_return(self):
-        # A checker that returned True for any file would let the note go stale unnoticed.
-        self.assertTrue(flag_written_after_the_list_check(
-            "static void restore(Context context) {\nif (!missing) return;\n"
-            "Settings.Secure.putInt(cr, Settings.Secure.ACCESSIBILITY_ENABLED, 1);\n}"))
-        self.assertFalse(flag_written_after_the_list_check(
-            "static void restore(Context context) {\n"
-            "Settings.Secure.putInt(cr, Settings.Secure.ACCESSIBILITY_ENABLED, 1);\n"
-            "if (!missing) return;\n}"))
-        self.assertFalse(flag_written_after_the_list_check("static void restore(Context context) {}"))
+    def test_rebind_check_requires_all_three_operations(self):
+        self.assertTrue(rebinds_complete_list_when_accessibility_is_off(
+            "needsAccessibilityRebind(accessibilityEnabled, allRecordedServicesEnabled); "
+            "Settings.Secure.putString(cr, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, \"\"); "
+            "Settings.Secure.putInt(cr, Settings.Secure.ACCESSIBILITY_ENABLED, 1);"))
+        self.assertFalse(rebinds_complete_list_when_accessibility_is_off(
+            "needsAccessibilityRebind(accessibilityEnabled, allRecordedServicesEnabled);"))
+        self.assertFalse(rebinds_complete_list_when_accessibility_is_off(""))
 
 
 if __name__ == "__main__":
